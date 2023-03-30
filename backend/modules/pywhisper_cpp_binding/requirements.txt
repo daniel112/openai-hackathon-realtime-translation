@@ -1,0 +1,5 @@
+numba
+numpy==1.23.5
+torch
+pywhispercpp
+websockets

@@ -1,0 +1,38 @@
+.outline {
+	outline-style: solid;
+	outline-color: red;
+}
+
+.alt-outline {
+	outline-style: solid;
+	outline-color: blue;
+}
+
+.wave {
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	width: 100%;
+	overflow: hidden;
+	line-height: 0;
+}
+
+.wave {
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	width: 100%;
+	overflow: hidden;
+	line-height: 0;
+}
+
+.wave svg {
+	position: relative;
+	display: block;
+	width: calc(124% + 1.3px);
+	height: 317px;
+}
+
+.wave .shape-fill {
+	fill: #313746;
+}
