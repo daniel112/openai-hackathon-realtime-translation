@@ -27,9 +27,8 @@ def translate(request_model: TranslateRequestModel):
         response = openai.ChatCompletion.create(
             engine=os.getenv('OPENAI_DEPLOYMENT_NAME'),
             messages=[
-                {"role": "system", "content": f"You are an accurate language translator that will translate {request_model.from_language} text to {request_model.to_language}. Please translate the user's message. Do not include the pronounciation. If the language is already in the correct language, just reply back with the same content."},
-                {"role": "system", "content": f"If you receive a word(s) that you cannot translate. Translate all the words you can and ignore the typo or incomplete word(s) "},
-                {"role": "user", "content": request_model.text}
+                {"role": "system", "content": f"You are an accurate language translator that will translate {request_model.from_language} text to {request_model.to_language}. Do not include the pronounciation. You reply only with the direct translation, with brief to-the-point answers with no elaboration."},
+                {"role": "user", "content": f"Translate the following: {request_model.text}"}
             ]
         )
         return response['choices'][0]['message']['content']
