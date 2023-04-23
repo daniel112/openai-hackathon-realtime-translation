@@ -120,7 +120,6 @@ const InputSection = ({ socketRef, isRecording, setIsRecording }: any) => {
           }}
         />
         <LanguageSelector
-          // disabled={isRecording}
           title="What language are you translating to?"
           defaultIndex={1}
           onChange={(newValue) => {
