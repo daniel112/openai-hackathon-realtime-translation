@@ -19,6 +19,7 @@ import {
 } from "../RecordScreen/translationUtils";
 import {
   ResultReason,
+  SpeechRecognizer,
   TranslationRecognizer,
 } from "microsoft-cognitiveservices-speech-sdk";
 import * as speechSDK from "microsoft-cognitiveservices-speech-sdk";
@@ -31,7 +32,7 @@ export const DemoAzureScreen = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [summary, setSummary] = useState<string>();
   const [voiceFile, setVoiceFile] = useState<string>();
-  const [recognizer, setRecognizer] = useState<TranslationRecognizer>();
+  const [recognizer, setRecognizer] = useState<SpeechRecognizer>();
   const textGroupIndex = React.useRef(0);
   const languageFromRef = React.useRef<{ label: string; iso: string }>({
     label: "English",
@@ -48,20 +49,20 @@ export const DemoAzureScreen = () => {
       const tokenObj = await getAzSpeechToken();
       const audioConfig = speechSDK.AudioConfig.fromDefaultMicrophoneInput();
 
-      const speechConfig =
-        speechSDK.SpeechTranslationConfig.fromAuthorizationToken(
-          tokenObj.authToken!,
-          tokenObj.region!
-        );
+      const speechConfig = speechSDK.SpeechConfig.fromAuthorizationToken(
+        tokenObj.authToken!,
+        tokenObj.region!
+      );
       speechConfig.outputFormat = speechSDK.OutputFormat.Detailed;
-      // speechConfig.setProperty(
-      //   speechSDK.PropertyId.SpeechServiceResponse_PostProcessingOption,
-      //   "TrueText"
-      // );
-
-      speechConfig.addTargetLanguage(languageToRef.current.iso);
+      speechConfig.setProperty(
+        speechSDK.PropertyId.SpeechServiceResponse_PostProcessingOption,
+        "default"
+      );
+      console.log(speechConfig);
+      // speechConfig.addTargetLanguage(languageToRef.current.iso);
+      // input language
       speechConfig.speechRecognitionLanguage = "en-US";
-      var translationRecognizer = new speechSDK.TranslationRecognizer(
+      var translationRecognizer = new speechSDK.SpeechRecognizer(
         speechConfig,
         audioConfig
       );
@@ -73,13 +74,16 @@ export const DemoAzureScreen = () => {
       return;
     }
     recognizer.recognizing = (s, e) => {
-      const translatedText = e.result.translations?.get?.(
-        languageToRef.current.iso
-      );
+      console.log("original", e.result.text);
+      // const translatedText = e.result.translations?.get?.(
+      //   languageToRef.current.iso
+      // );
+      // console.log("translated", translatedText);
+
       setTranslationMap((prev) => ({
         ...prev,
         [textGroupIndex.current]: {
-          text: translatedText,
+          text: e.result.text,
           transcriptionTime: 0,
           translationTime: 0,
         },
@@ -87,15 +91,13 @@ export const DemoAzureScreen = () => {
     };
 
     recognizer.recognized = (s, e) => {
-      if (e.result.reason === ResultReason.TranslatedSpeech) {
+      console.log({ recognized: e, reason: e.result.reason });
+      if (e.result.reason === ResultReason.RecognizedSpeech) {
         console.log("TEXT", e.result.text);
-        const translatedText = e.result.translations?.get?.(
-          languageToRef.current.iso
-        );
         setTranslationMap((prev) => ({
           ...prev,
           [textGroupIndex.current]: {
-            text: translatedText,
+            text: e.result.text,
             transcriptionTime: 0,
             translationTime: 0,
           },
@@ -107,12 +109,12 @@ export const DemoAzureScreen = () => {
 
   useEffect(() => {
     console.log("ADDING TARGET LANGUAGE");
-    recognizer?.addTargetLanguage(languageToRef.current.iso);
+    // recognizer?.addTargetLanguage(languageToRef.current.iso);
   }, [languageToRef.current.iso]);
 
   return (
     <Box padding={10}>
-      <Heading>BabelFish: Azure Speech Demo</Heading>
+      <Heading>Azure Speech Demo</Heading>
       <Heading size={"xs"} color="gray.400" fontWeight={"light"}>
         Translate audio in real time
       </Heading>
