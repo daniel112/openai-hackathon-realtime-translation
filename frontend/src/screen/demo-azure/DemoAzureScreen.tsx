@@ -26,6 +26,7 @@ import * as speechSDK from "microsoft-cognitiveservices-speech-sdk";
 import Lottie from "react-lottie";
 import recordingTransition from "../../lottie/recording-transition.json";
 import { getAzSpeechToken } from "../../services/getAzSpeechToken";
+import { summarizeTranscript } from "../../services/openai";
 
 export const DemoAzureScreen = () => {
   const [translationMap, setTranslationMap] = useState<TranslationMap>({});
@@ -33,6 +34,7 @@ export const DemoAzureScreen = () => {
   const [summary, setSummary] = useState<string>();
   const [voiceFile, setVoiceFile] = useState<string>();
   const [recognizer, setRecognizer] = useState<SpeechRecognizer>();
+  const [liveFeed, setLiveFeed] = useState<string>("");
   const textGroupIndex = React.useRef(0);
   const languageFromRef = React.useRef<{ label: string; iso: string }>({
     label: "English",
@@ -74,26 +76,22 @@ export const DemoAzureScreen = () => {
       return;
     }
     recognizer.recognizing = (s, e) => {
-      console.log("original", e.result.text);
+      console.log("recognizing", e.result.text);
+      console.log(e.result.reason);
       // const translatedText = e.result.translations?.get?.(
       //   languageToRef.current.iso
       // );
       // console.log("translated", translatedText);
 
-      setTranslationMap((prev) => ({
-        ...prev,
-        [textGroupIndex.current]: {
-          text: e.result.text,
-          transcriptionTime: 0,
-          translationTime: 0,
-        },
-      }));
+      if (e.result.reason === ResultReason.RecognizingSpeech) {
+        setLiveFeed(e.result.text);
+      }
     };
 
     recognizer.recognized = (s, e) => {
       console.log({ recognized: e, reason: e.result.reason });
       if (e.result.reason === ResultReason.RecognizedSpeech) {
-        console.log("TEXT", e.result.text);
+        console.log("recognized", e.result.text);
         setTranslationMap((prev) => ({
           ...prev,
           [textGroupIndex.current]: {
@@ -102,6 +100,7 @@ export const DemoAzureScreen = () => {
             translationTime: 0,
           },
         }));
+        setLiveFeed("");
         textGroupIndex.current++;
       }
     };
@@ -120,7 +119,7 @@ export const DemoAzureScreen = () => {
       </Heading>
 
       <Stack direction={"row"} spacing={10} justifyContent={"space-between"}>
-        <Stack direction={"column"}>
+        <Stack direction={"column"} flex={1}>
           <InputSection
             languageFromRef={languageFromRef}
             languageToRef={languageToRef}
@@ -141,14 +140,18 @@ export const DemoAzureScreen = () => {
               }
             }}
           />
+          <CallSummary summary={summary} />
         </Stack>
 
         <TranslatedSection
+          liveFeed={liveFeed}
           text={combinedText}
           onClearPress={() => setTranslationMap({})}
           isRecording={isRecording}
-          onSummarize={() => {
+          onSummarize={async () => {
             console.log("ON SUMMARIZE");
+            const result = await summarizeTranscript(combinedText);
+            result.text && setSummary(result.text);
           }}
           onVoice={() => {
             console.log("ON VOICE");
@@ -231,7 +234,17 @@ const InputSection = ({
   );
 };
 
+const CallSummary = ({ summary }: any) => {
+  return (
+    <Stack direction={"column"} paddingTop={10}>
+      <Heading size={"md"}>Transcript Summary</Heading>
+      <Text>{summary}</Text>
+    </Stack>
+  );
+};
+
 const TranslatedSection = ({
+  liveFeed,
   text,
   onClearPress,
   isRecording,
@@ -269,7 +282,7 @@ const TranslatedSection = ({
       <CardBody>
         <Box maxH={500} h={500} overflowY="auto">
           <Heading size="xs" fontWeight={"medium"} lineHeight={6}>
-            {text}
+            {`${text} ${liveFeed}`}
           </Heading>
         </Box>
       </CardBody>
