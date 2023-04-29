@@ -26,7 +26,10 @@ import * as speechSDK from "microsoft-cognitiveservices-speech-sdk";
 import Lottie from "react-lottie";
 import recordingTransition from "../../lottie/recording-transition.json";
 import { getAzSpeechToken } from "../../services/getAzSpeechToken";
-import { summarizeTranscript } from "../../services/openai";
+import {
+  summarizeTranscript,
+  translateTranscript,
+} from "../../services/openai";
 
 export const DemoAzureScreen = () => {
   const [translationMap, setTranslationMap] = useState<TranslationMap>({});
@@ -64,18 +67,18 @@ export const DemoAzureScreen = () => {
       // speechConfig.addTargetLanguage(languageToRef.current.iso);
       // input language
       speechConfig.speechRecognitionLanguage = "en-US";
-      var translationRecognizer = new speechSDK.SpeechRecognizer(
+      var speechRecognizer = new speechSDK.SpeechRecognizer(
         speechConfig,
         audioConfig
       );
-      setRecognizer(translationRecognizer);
+      setRecognizer(speechRecognizer);
     };
 
     if (!recognizer) {
       asyncThing();
       return;
     }
-    recognizer.recognizing = (s, e) => {
+    recognizer.recognizing = async (s, e) => {
       console.log("recognizing", e.result.text);
       console.log(e.result.reason);
       // const translatedText = e.result.translations?.get?.(
@@ -84,7 +87,13 @@ export const DemoAzureScreen = () => {
       // console.log("translated", translatedText);
 
       if (e.result.reason === ResultReason.RecognizingSpeech) {
-        setLiveFeed(e.result.text);
+        const translateRes = await translateTranscript({
+          text: e.result.text,
+          fromLanguage: languageFromRef.current.iso,
+          toLanguage: languageToRef.current.iso,
+        });
+
+        setLiveFeed(translateRes.text ?? "foo");
       }
     };
 
@@ -106,10 +115,10 @@ export const DemoAzureScreen = () => {
     };
   }, [recognizer]);
 
-  useEffect(() => {
-    console.log("ADDING TARGET LANGUAGE");
-    // recognizer?.addTargetLanguage(languageToRef.current.iso);
-  }, [languageToRef.current.iso]);
+  // useEffect(() => {
+  //   console.log("ADDING TARGET LANGUAGE");
+  //   recognizer?.addTargetLanguage(languageToRef.current.iso);
+  // }, [languageToRef.current.iso]);
 
   return (
     <Box padding={10}>
@@ -209,6 +218,7 @@ const InputSection = ({
           title="What language are you speaking?"
           onChange={(newValue) => {
             if (newValue) {
+              console.log(`Speaking: ${newValue.labelString}`);
               languageFromRef.current = {
                 iso: newValue.value,
                 label: newValue.labelString!,
@@ -220,8 +230,8 @@ const InputSection = ({
           title="What language are you translating to?"
           defaultIndex={1}
           onChange={(newValue) => {
-            console.log({ newValue });
             if (newValue) {
+              console.log(`Translating to: ${newValue.labelString}`);
               languageToRef.current = {
                 iso: newValue.value,
                 label: newValue.labelString!,
@@ -290,17 +300,6 @@ const TranslatedSection = ({
         <>
           <Button colorScheme={"green"} onClick={onSummarize}>
             Summarize
-          </Button>
-          <Button
-            colorScheme={"blue"}
-            mt={4}
-            onClick={() => {
-              setVoiceLoading(true);
-              onVoice();
-            }}
-            isDisabled={isVoiceLoading}
-          >
-            {isVoiceLoading ? "Loading..." : "Voice"}
           </Button>
         </>
       )}

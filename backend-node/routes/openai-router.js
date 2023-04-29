@@ -4,11 +4,6 @@ const axios = require("axios");
 const openaiconfig = require("./openai-config.json");
 const { Configuration, OpenAIApi } = require("openai");
 
-const configuration = new Configuration({
-  apiKey: process.env.OPENAI_KEY,
-});
-const openai = new OpenAIApi(configuration);
-
 //Set up OpenAI API key and endpoint
 const openaiKey = process.env.OPENAI_KEY;
 const openaiEndpoint = process.env.OPENAI_ENDPOINT;
@@ -22,31 +17,25 @@ const openaiFrequencyPenalty = openaiconfig[0].openai_frequency_penalty;
 const openaiPresencePenalty = openaiconfig[0].openai_presence_penalty;
 const openaiApiVersion = openaiconfig[0].openai_api_version;
 
+const configuration = new Configuration({
+  apiKey: openaiKey,
+  basePath: `${openaiEndpoint}openai/deployments/${openaiDeploymentName}`,
+  baseOptions: {
+    headers: { "api-key": openaiKey },
+    params: {
+      "api-version": "2023-03-15-preview",
+    },
+  },
+});
+const openai = new OpenAIApi(configuration);
+
 //Set up OpenAI GPT-3 prompts by business domain
 const generalPrompt = openaiconfig[0].general_prompt;
 
-router.post("/gpt/customPrompt", async (req, res) => {
+router.post("/gpt/summarize", async (req, res) => {
   const requestText = JSON.stringify(req.body.transcript);
-  // const requestCustomPrompt = req.body.customPrompt;
-  // const customParsePrompt = requestText + "\n\n" + requestCustomPrompt;
-  // const url =
-  //   openaiEndpoint +
-  //   "openai/deployments/" +
-  //   openaiDeploymentName +
-  //   "/completions?api-version=" +
-  //   openaiApiVersion;
-  // const headers = { "Content-Type": "application/json", "api-key": openaiKey };
-  // const params = {
-  //   prompt: customParsePrompt,
-  //   max_tokens: 1000,
-  //   temperature: openaiTemperature,
-  //   top_p: openaiTopP,
-  //   frequency_penalty: openaiFrequencyPenalty,
-  //   presence_penalty: openaiPresencePenalty,
-  // };
-
   const completion = await openai.createChatCompletion({
-    engine: openaiDeploymentName,
+    // engine: openaiDeploymentName,
     messages: [
       {
         role: "system",
@@ -55,39 +44,38 @@ router.post("/gpt/customPrompt", async (req, res) => {
       },
       { role: "user", content: requestText },
     ],
-    // temperature: openaiTemperature,
-    // top_p: openaiTopP,
+    temperature: openaiTemperature,
+    top_p: openaiTopP,
   });
 
   res.send(completion.data.choices[0].message);
 });
 
-router.post("/gpt/summarize", async (req, res) => {
+/**
+ * This endpoint is used to translate text from one language to another.
+ * @param {string} req.body.transcript - The text to be translated.
+ * @param {string} req.body.fromLanguage - The language to translate from.
+ * @param {string} req.body.toLanguage - The language to translate to.
+ */
+router.post("/gpt/translate", async (req, res) => {
   const requestText = JSON.stringify(req.body.transcript);
-  const summaryPrompt = requestText + "\n\nTl;dr";
-  const url =
-    openaiEndpoint +
-    "openai/deployments/" +
-    openaiDeploymentName +
-    "/completions?api-version=" +
-    openaiApiVersion;
+  const fromLanguage = JSON.stringify(req.body.fromLanguage);
+  const toLanguage = JSON.stringify(req.body.toLanguage);
 
-  console.log("Prompt for summary " + summaryPrompt);
-  // NOTE:
-  // edge case filtering sensitive content: https://go.microsoft.com/fwlink/?linkid=2198766
-  // will return 400 with code: content_filter
-  const headers = { "Content-Type": "application/json", "api-key": openaiKey };
-  const params = {
-    prompt: summaryPrompt,
-    max_tokens: openaiMaxTokens,
+  const completion = await openai.createChatCompletion({
+    // engine: openaiDeploymentName,
+    messages: [
+      {
+        role: "system",
+        content: `You are an accurate language translator that will translate ${fromLanguage} text to ${toLanguage}. Do not include the pronounciation. You reply only with the direct translation, with brief to-the-point answers with no elaboration.`,
+      },
+      { role: "user", content: `Translate the following: ${requestText}` },
+    ],
     temperature: openaiTemperature,
     top_p: openaiTopP,
-    frequency_penalty: openaiFrequencyPenalty,
-    presence_penalty: openaiPresencePenalty,
-  };
+  });
 
-  const summaryResponse = await axios.post(url, params, { headers: headers });
-  res.send(summaryResponse.data.choices[0]);
+  res.send(completion.data.choices[0].message);
 });
 
 // router.post("/gpt/parseExtractInfo", async (req, res) => {

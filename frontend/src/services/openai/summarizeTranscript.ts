@@ -2,7 +2,7 @@ import axios from "axios";
 const BASE_URL = "http://localhost:8080";
 
 interface APIResponse {
-  error: any;
+  error?: any;
 }
 interface GPTResponse extends APIResponse {
   finish_reason?: string;
@@ -15,7 +15,7 @@ export async function summarizeTranscript(text: string): Promise<GPTResponse> {
       transcript: text,
     });
     console.log(res);
-    return res.data;
+    return { text: res.data.content };
     // return { authToken: token, region: region };
   } catch (err) {
     console.log(err);
