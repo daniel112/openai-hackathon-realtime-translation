@@ -10,6 +10,8 @@ app.use(
 );
 // get router
 const openaiRouter = require("./routes/openai-router");
+const azureRouter = require("./routes/azure");
+
 // const azurelanguageRouter = require("./routes/azureai-language");
 
 // get config
@@ -20,6 +22,7 @@ const endpoint_id = process.env.CUSTOM_SPEECH_ENDPOINT_ID_OPTIONAL;
 
 app.use(express.json());
 app.use("/openai", openaiRouter);
+app.use("/azure", azureRouter);
 // app.use("/azure/language", azurelanguageRouter);
 
 app.get("/api/get-speech-token", async (req, res, next) => {

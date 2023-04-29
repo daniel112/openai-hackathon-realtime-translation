@@ -3,6 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@azure/communication-common": "^2.2.0",
+    "@azure/communication-react": "^1.5.0",
     "@chakra-ui/icons": "^2.0.17",
     "@chakra-ui/react": "^2.6.0",
     "@emotion/react": "^11.10.6",

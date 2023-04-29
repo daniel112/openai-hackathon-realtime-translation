@@ -4,6 +4,8 @@ import { RecordScreen } from "./screen/RecordScreen/RecordScreen";
 import { extendTheme, type ThemeConfig } from "@chakra-ui/react";
 import { NewHomeScreen } from "./screen/NewHomeScreen/NewHomeScreen";
 import { DemoAzureScreen } from "./screen/demo-azure/DemoAzureScreen";
+import { DemoTextChatScreen } from "./screen/demo-textchat/DemoTextChatScreen";
+import { TextChatHomeScreen } from "./screen/demo-textchat/TextChatHomeScreen";
 
 const config: ThemeConfig = {
   initialColorMode: "dark",
@@ -27,6 +29,14 @@ const router = createBrowserRouter([
   {
     path: "/demo-azure",
     element: <DemoAzureScreen />,
+  },
+  {
+    path: "/demo-textchat",
+    element: <TextChatHomeScreen />,
+  },
+  {
+    path: "/demo-textchat/:threadId",
+    element: <TextChatHomeScreen />,
   },
 ]);
 
