@@ -1,0 +1,36 @@
+const express = require("express");
+const router = express.Router();
+const {
+  getIdentityClient,
+} = require("../../utils/azure/communication-service");
+
+/**
+ * route: GET /azure/communicationToken
+ *
+ * purpose: To get Azure Communication Services token with the given scope.
+ *
+ * @param scope: scope for the token as string
+ *
+ * @returns The token as string
+ *
+ * @remarks
+ * By default the get and post routes will return a token with scopes ['chat', 'voip'].
+ * Optionally ?scope can be passed in containing scopes seperated by comma
+ * e.g. ?scope=chat,voip
+ *
+ */
+
+router.get("/communicationToken", async function (req, res, next) {
+  res.send(await handleUserTokenRequest(req.query.scope));
+});
+
+/**
+ * handleUserTokenRequest will return a default scoped token if no scopes are provided.
+ * @param requestedScope [optional] string from the request, this should be a comma seperated list of scopes.
+ */
+const handleUserTokenRequest = async (requestedScope) => {
+  const scopes = requestedScope ? requestedScope.split(",") : ["chat", "voip"];
+  return await getIdentityClient.createUserAndToken(scopes);
+};
+
+module.exports = router;
