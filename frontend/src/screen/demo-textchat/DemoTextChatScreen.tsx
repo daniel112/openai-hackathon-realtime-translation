@@ -11,8 +11,7 @@ import { fetchEmojiForUser } from "./utils/emojiCache";
 import { getEmojiBackgroundColor } from "./utils/getEmojiBackgroundColor";
 import { createAutoRefreshingCredential } from "./services/credential";
 import { CommunicationUserIdentifier } from "@azure/communication-common";
-import { Stack } from "@chakra-ui/react";
-import { useParams } from "react-router-dom";
+import { Button, Stack } from "@chakra-ui/react";
 
 interface ChatScreenProps {
   token: string;
@@ -21,17 +20,19 @@ interface ChatScreenProps {
   endpointUrl: string;
   threadId: string;
   endChatHandler(isParticipantRemoved: boolean): void;
+  onLeaveChat(): void;
 }
 
-export const DemoTextChatScreen = (props: ChatScreenProps): JSX.Element => {
-  // const { threadId } = useParams();
-
-  // if (!threadId) {
-
-  // }
-  const { displayName, endpointUrl, threadId, token, userId, endChatHandler } =
-    props;
-
+export const TextChatComponent = (props: ChatScreenProps): JSX.Element => {
+  const {
+    displayName,
+    endpointUrl,
+    threadId,
+    token,
+    userId,
+    endChatHandler,
+    onLeaveChat,
+  } = props;
   const adapterAfterCreate = useCallback(
     async (adapter: ChatAdapter): Promise<ChatAdapter> => {
       adapter.on("participantsRemoved", (listener) => {
@@ -102,7 +103,14 @@ export const DemoTextChatScreen = (props: ChatScreenProps): JSX.Element => {
           }}
           onFetchAvatarPersonaData={onFetchAvatarPersonaData}
         />
-        {/* <ChatHeader onEndChat={() => adapter.removeParticipant(userId)} /> */}
+        <Button
+          onClick={() => {
+            adapter.removeParticipant(userId);
+            onLeaveChat();
+          }}
+        >
+          Leave Chat
+        </Button>
       </Stack>
     );
   }
