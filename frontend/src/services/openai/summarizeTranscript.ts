@@ -1,5 +1,5 @@
 import axios from "axios";
-const BASE_URL = "http://localhost:8080";
+import { BASE_URL } from "../../screen/demo-textchat/constants";
 
 interface APIResponse {
   error?: any;

@@ -1,6 +1,6 @@
 import axios from "axios";
 import Cookie from "universal-cookie";
-const BASE_URL = "http://localhost:8080";
+import { BASE_URL } from "../screen/demo-textchat/constants";
 interface AzSpeechToken {
   authToken: string | null;
   region?: string;
