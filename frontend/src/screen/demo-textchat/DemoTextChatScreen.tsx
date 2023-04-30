@@ -7,11 +7,13 @@ import {
   useAzureCommunicationChatAdapter,
 } from "@azure/communication-react";
 import { useCallback, useMemo, useEffect } from "react";
-import { fetchEmojiForUser } from "./utils/emojiCache";
+import { fetchEmojiForUser } from "./services/getUserEmoji";
 import { getEmojiBackgroundColor } from "./utils/getEmojiBackgroundColor";
 import { createAutoRefreshingCredential } from "./services/credential";
 import { CommunicationUserIdentifier } from "@azure/communication-common";
 import { Button, Stack } from "@chakra-ui/react";
+import { ChatMessage } from "@azure/communication-chat";
+import { Text } from "@chakra-ui/react";
 
 interface ChatScreenProps {
   token: string;
@@ -45,6 +47,9 @@ export const TextChatComponent = (props: ChatScreenProps): JSX.Element => {
           );
           endChatHandler(removedBy !== userId);
         }
+      });
+      adapter.on("messageReceived", (listener) => {
+        console.log("message received", listener);
       });
       adapter.on("error", (e) => {
         console.error(e);
@@ -97,6 +102,18 @@ export const TextChatComponent = (props: ChatScreenProps): JSX.Element => {
       <Stack dir="column">
         <ChatComposite
           adapter={adapter}
+          onRenderMessage={(props) => {
+            console.log(props);
+            // NOTE: microsofts js sdk suck ass
+            // the typing is all wrong
+            const chatMessage = props.message as unknown as ChatMessage;
+            const message = chatMessage.content as string;
+            return (
+              <>
+                <Text>{message}</Text>
+              </>
+            );
+          }}
           // fluentTheme={currentTheme.theme}
           options={{
             autoFocus: "sendBoxTextField",

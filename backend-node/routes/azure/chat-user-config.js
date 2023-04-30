@@ -32,4 +32,9 @@ router.post("/chatUserConfig/:userId", async function (req, res, next) {
   res.sendStatus(200);
 });
 
+router.get("/chatUserConfig/:userId", async function (req, res, next) {
+  const userConfig = userIdToUserConfigMap.get(req.params["userId"]);
+
+  res.send(userConfig);
+});
 module.exports = router;
