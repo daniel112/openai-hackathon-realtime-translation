@@ -1,7 +1,9 @@
 import {
+  Box,
   Button,
   Center,
   Container,
+  HStack,
   Heading,
   Input,
   Radio,
@@ -26,7 +28,9 @@ import { getAZCommunicationUrl } from "./services/getAZCommunicationUrl";
 import { getAZCommunicationToken } from "./services/getAZCommunicationToken";
 import { sendEmojiRequest } from "./services/sendEmojiRequest";
 import { addUserToChatThread } from "./services/addUserToChatThread";
-import { TextChatComponent } from "./DemoTextChatScreen";
+import { TextChatComponent } from "./DemoTextChatComponent";
+import { LanguageSelector } from "../../components/LanguageSelector";
+import { getChatHistory } from "./utils/getChatHistory";
 
 const avatarsList = [CAT, MOUSE, KOALA, OCTOPUS, MONKEY, FOX];
 
@@ -45,7 +49,10 @@ export const TextChatHomeScreen = (): JSX.Element => {
   const [chatIdentity, setChatIdentity] = React.useState<string>();
   const [endpointUrl, setEndpointUrl] = React.useState<string>();
   const navigate = useNavigate();
-
+  const languageRef = React.useRef<{ label: string; iso: string }>({
+    label: "Spanish",
+    iso: "es",
+  });
   useEffect(() => {
     // if we already have a threadId from param, we don't need to create a new one
     if (threadIdFromParam) {
@@ -67,91 +74,111 @@ export const TextChatHomeScreen = (): JSX.Element => {
 
   const emojiBGColor = getEmojiBackgroundColor(selectedAvatar);
 
-  if (token && chatIdentity && endpointUrl && threadId && displayName) {
-    return (
-      <TextChatComponent
-        token={token}
-        userId={chatIdentity}
-        displayName={displayName}
-        endpointUrl={endpointUrl}
-        threadId={threadId}
-        onLeaveChat={() => {
-          setToken(undefined);
-          setChatIdentity(undefined);
-          setEndpointUrl(undefined);
-          setThreadId("");
-          setDisplayName(undefined);
-          navigate("/demo-textchat");
-        }}
-        endChatHandler={(isParticipantRemoved) => {
-          if (isParticipantRemoved) {
-            console.log("participant removed, navigating to end screen");
-          } else {
-            console.log("participant left, navigating to end screen");
-          }
-        }}
-      />
-    );
-  }
-  // two ChakraUI buttons with "Join" and "Create"
   return (
-    <Center>
-      <VStack pr={10}>
-        <Text>Your Profile</Text>
-        <Center
-          style={emojiBGColor}
-          borderRadius={"50%"}
-          w={"8.25rem"}
-          h={"8.25rem"}
-        >
-          <Heading as="h1" size="4xl">
-            {selectedAvatar}
-          </Heading>
+    <HStack>
+      <VStack flex={1} h={"100%"}>
+        <ChatSummary />
+      </VStack>
+      {token && chatIdentity && endpointUrl && threadId && displayName ? (
+        <VStack flex={1} h={"100%"}>
+          <TextChatComponent
+            token={token}
+            userId={chatIdentity}
+            displayName={displayName}
+            endpointUrl={endpointUrl}
+            threadId={threadId}
+            languageIso={languageRef.current.iso}
+            onLeaveChat={() => {
+              setToken(undefined);
+              setChatIdentity(undefined);
+              setEndpointUrl(undefined);
+              setThreadId("");
+              setDisplayName(undefined);
+              navigate("/demo-textchat");
+            }}
+            endChatHandler={async () => {
+              // gather the chat history
+              // summarize through GPT
+              const { stringifiedMessages, messages } = await getChatHistory({
+                token,
+                endpointUrl,
+                threadId,
+              });
+              console.log(stringifiedMessages);
+            }}
+          />
+        </VStack>
+      ) : (
+        <Center px={8} flex={1}>
+          <VStack>
+            <Text>Your Profile</Text>
+            <Center
+              style={emojiBGColor}
+              borderRadius={"50%"}
+              w={"8.25rem"}
+              h={"8.25rem"}
+            >
+              <Heading as="h1" size="4xl">
+                {selectedAvatar}
+              </Heading>
+            </Center>
+            <Text>{displayName}</Text>
+            <AvatarSection
+              onChange={(avatar: string) => {
+                setSelectedAvatar(avatar);
+              }}
+            />
+            <Input
+              placeholder="Username"
+              onChange={(ev) => setDisplayName(ev.target.value)}
+            />
+            <LanguageSelector
+              title="Primay language:"
+              defaultIndex={1}
+              onChange={(newValue) => {
+                if (newValue) {
+                  console.log(`Translating to: ${newValue.labelString}`);
+                  languageRef.current = {
+                    iso: newValue.value,
+                    label: newValue.labelString!,
+                  };
+                }
+              }}
+            />
+            <Box flex={1} w={"100%"} pt={5}>
+              <Button
+                w={"100%"}
+                isDisabled={!displayName}
+                colorScheme="blue"
+                onClick={async (): Promise<void> => {
+                  const token = await getAZCommunicationToken();
+                  const endpointUrl = await getAZCommunicationUrl();
+                  console.log({ token, endpointUrl });
+                  setToken(token.token);
+                  setChatIdentity(token.identity);
+                  setEndpointUrl(endpointUrl);
+
+                  // update the user profile with selected emoji avatar
+                  await sendEmojiRequest(token.identity, selectedAvatar);
+
+                  // attempt to add this user to the chat thread
+                  const result = await addUserToChatThread(
+                    threadId,
+                    token.identity,
+                    displayName!
+                  );
+                  if (!result) {
+                    console.log("Failed to join thread");
+                  }
+                }}
+              >
+                {threadIdFromParam ? "Join" : "Create"}
+              </Button>
+            </Box>
+          </VStack>
         </Center>
-        <Text>{displayName}</Text>
-      </VStack>
-      <VStack>
-        <AvatarSection
-          onChange={(avatar: string) => {
-            setSelectedAvatar(avatar);
-          }}
-        />
-        <Input
-          placeholder="Username"
-          onChange={(ev) => setDisplayName(ev.target.value)}
-        />
-        <Button
-          w={"100%"}
-          colorScheme="blue"
-          onClick={async (): Promise<void> => {
-            const token = await getAZCommunicationToken();
-            const endpointUrl = await getAZCommunicationUrl();
-            console.log({ token, endpointUrl });
-            setToken(token.token);
-            setChatIdentity(token.identity);
-            setEndpointUrl(endpointUrl);
-
-            // update the user profile with selected emoji avatar
-            await sendEmojiRequest(token.identity, selectedAvatar);
-
-            // attempt to add this user to the chat thread
-            const result = await addUserToChatThread(
-              threadId,
-              token.identity,
-              displayName!
-            );
-            if (!result) {
-              console.log("Failed to join thread");
-            }
-
-            // change page to the chat thread
-            // joinChatHandler();
-          }}
-        >
-          {threadIdFromParam ? "Join" : "Create"}
-        </Button>
-      </VStack>
-    </Center>
+      )}
+    </HStack>
   );
 };
 
@@ -165,6 +192,15 @@ const onCreateThread = async (): Promise<string | null> => {
   } else {
     return threadId;
   }
+};
+
+const ChatSummary = ({ summary }: any) => {
+  return (
+    <Stack direction={"column"} paddingTop={10}>
+      <Heading size={"md"}>Transcript Summary</Heading>
+      <Text>{summary}</Text>
+    </Stack>
+  );
 };
 
 const AvatarSection = ({ onChange }: any): JSX.Element => {

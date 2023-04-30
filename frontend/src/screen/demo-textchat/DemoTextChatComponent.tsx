@@ -2,17 +2,19 @@ import {
   AvatarPersonaData,
   ChatAdapter,
   ChatComposite,
+  SystemMessage,
+  darkTheme,
   fromFlatCommunicationIdentifier,
   toFlatCommunicationIdentifier,
   useAzureCommunicationChatAdapter,
+  ChatMessage,
 } from "@azure/communication-react";
 import { useCallback, useMemo, useEffect } from "react";
 import { fetchEmojiForUser } from "./services/getUserEmoji";
 import { getEmojiBackgroundColor } from "./utils/getEmojiBackgroundColor";
 import { createAutoRefreshingCredential } from "./services/credential";
 import { CommunicationUserIdentifier } from "@azure/communication-common";
-import { Button, Stack } from "@chakra-ui/react";
-import { ChatMessage } from "@azure/communication-chat";
+import { Box, Button, HStack, VStack } from "@chakra-ui/react";
 import { Text } from "@chakra-ui/react";
 
 interface ChatScreenProps {
@@ -21,6 +23,7 @@ interface ChatScreenProps {
   displayName: string;
   endpointUrl: string;
   threadId: string;
+  languageIso: string;
   endChatHandler(isParticipantRemoved: boolean): void;
   onLeaveChat(): void;
 }
@@ -34,6 +37,7 @@ export const TextChatComponent = (props: ChatScreenProps): JSX.Element => {
     userId,
     endChatHandler,
     onLeaveChat,
+    languageIso,
   } = props;
   const adapterAfterCreate = useCallback(
     async (adapter: ChatAdapter): Promise<ChatAdapter> => {
@@ -48,9 +52,7 @@ export const TextChatComponent = (props: ChatScreenProps): JSX.Element => {
           endChatHandler(removedBy !== userId);
         }
       });
-      adapter.on("messageReceived", (listener) => {
-        console.log("message received", listener);
-      });
+
       adapter.on("error", (e) => {
         console.error(e);
       });
@@ -99,36 +101,79 @@ export const TextChatComponent = (props: ChatScreenProps): JSX.Element => {
           })
       );
     return (
-      <Stack dir="column">
-        <ChatComposite
-          adapter={adapter}
-          onRenderMessage={(props) => {
-            console.log(props);
-            // NOTE: microsofts js sdk suck ass
-            // the typing is all wrong
-            const chatMessage = props.message as unknown as ChatMessage;
-            const message = chatMessage.content as string;
-            return (
-              <>
-                <Text>{message}</Text>
-              </>
-            );
-          }}
-          // fluentTheme={currentTheme.theme}
-          options={{
-            autoFocus: "sendBoxTextField",
-          }}
-          onFetchAvatarPersonaData={onFetchAvatarPersonaData}
-        />
-        <Button
-          onClick={() => {
-            adapter.removeParticipant(userId);
-            onLeaveChat();
-          }}
-        >
-          Leave Chat
-        </Button>
-      </Stack>
+      <>
+        <HStack>
+          <Button
+            colorScheme="red"
+            onClick={() => {
+              adapter.removeParticipant(userId);
+              onLeaveChat();
+            }}
+          >
+            End Chat
+          </Button>
+        </HStack>
+        <Box w={"100%"} flex={1} maxH={800}>
+          <ChatComposite
+            adapter={adapter}
+            onRenderMessage={(props) => {
+              /**
+               * When a user join. display some system message
+               */
+              if (props.message.messageType === "system") {
+                const systemMessage = props.message as SystemMessage;
+                if (systemMessage.systemMessageType === "participantAdded") {
+                  const newUserDisplayName =
+                    systemMessage.participants[0].displayName;
+                  return <Text>{newUserDisplayName} joined</Text>;
+                }
+              }
+              if (props.message.messageType === "custom") {
+                console.log({ custom: props });
+              }
+              if (props.message.messageType === "chat") {
+                const chatMessage = props.message as ChatMessage;
+                if (chatMessage.mine) {
+                  return (
+                    <Box
+                      bg={"messenger.400"}
+                      p={4}
+                      color={"white"}
+                      borderRadius={8}
+                      maxW={"30%"}
+                    >
+                      {chatMessage.content}
+                    </Box>
+                  );
+                } else {
+                  return (
+                    <Box
+                      bg={"blackAlpha.300"}
+                      p={4}
+                      color={"white"}
+                      borderRadius={8}
+                      maxW={"30%"}
+                    >
+                      <VStack alignItems={"flex-start"}>
+                        <Text color={"gray.400"}>
+                          {chatMessage.senderDisplayName}
+                        </Text>
+                        <Text>{chatMessage.content}</Text>
+                      </VStack>
+                    </Box>
+                  );
+                }
+              }
+              return <div></div>;
+            }}
+            fluentTheme={darkTheme}
+            options={{
+              autoFocus: "sendBoxTextField",
+            }}
+            onFetchAvatarPersonaData={onFetchAvatarPersonaData}
+          />
+        </Box>
+      </>
     );
   }
   return <>Initializing...</>;
