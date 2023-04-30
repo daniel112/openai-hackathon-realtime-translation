@@ -7,11 +7,6 @@ interface GetChatHistoryParams {
   threadId: string;
 }
 
-interface ChatMessage {
-  name: string;
-  content: string;
-}
-
 export const getChatHistory = async ({
   token,
   endpointUrl,
