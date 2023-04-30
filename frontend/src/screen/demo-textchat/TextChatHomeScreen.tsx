@@ -31,6 +31,7 @@ import { addUserToChatThread } from "./services/addUserToChatThread";
 import { TextChatComponent } from "./DemoTextChatComponent";
 import { LanguageSelector } from "../../components/LanguageSelector";
 import { getChatHistory } from "./utils/getChatHistory";
+import { summarizeTranscript } from "../../services/openai";
 
 const avatarsList = [CAT, MOUSE, KOALA, OCTOPUS, MONKEY, FOX];
 
@@ -43,11 +44,17 @@ export const TextChatHomeScreen = (): JSX.Element => {
   const [threadId, setThreadId] = React.useState<string>(
     threadIdFromParam ?? ""
   );
+
+  // pre-chat states
   const [selectedAvatar, setSelectedAvatar] = React.useState<string>(CAT);
   const [displayName, setDisplayName] = React.useState<string>();
   const [token, setToken] = React.useState<string>();
   const [chatIdentity, setChatIdentity] = React.useState<string>();
   const [endpointUrl, setEndpointUrl] = React.useState<string>();
+
+  // post chat summary states
+  const [summary, setSummary] = React.useState<string>();
+
   const navigate = useNavigate();
   const languageRef = React.useRef<{ label: string; iso: string }>({
     label: "Spanish",
@@ -77,7 +84,7 @@ export const TextChatHomeScreen = (): JSX.Element => {
   return (
     <HStack>
       <VStack flex={1} h={"100%"}>
-        <ChatSummary />
+        <ChatSummary summary={summary} />
       </VStack>
       {token && chatIdentity && endpointUrl && threadId && displayName ? (
         <VStack flex={1} h={"100%"}>
@@ -105,6 +112,8 @@ export const TextChatHomeScreen = (): JSX.Element => {
                 threadId,
               });
               console.log(stringifiedMessages);
+              const result = await summarizeTranscript(stringifiedMessages);
+              setSummary(result.text);
             }}
           />
         </VStack>
