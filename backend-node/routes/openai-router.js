@@ -51,6 +51,26 @@ router.post("/gpt/summarize", async (req, res) => {
   res.send(completion.data.choices[0].message);
 });
 
+router.post("/gpt/use", async (req, res) => {
+  // instruction for how the model should behave
+  const systemMessage = JSON.stringify(req.body.systemMessage);
+  const prompt = JSON.stringify(req.body.prompt);
+  const completion = await openai.createChatCompletion({
+    // engine: openaiDeploymentName,
+    messages: [
+      {
+        role: "system",
+        content: systemMessage,
+      },
+      { role: "user", content: prompt },
+    ],
+    temperature: openaiTemperature,
+    top_p: openaiTopP,
+  });
+
+  res.send(completion.data.choices[0].message);
+});
+
 /**
  * This endpoint is used to translate text from one language to another.
  * @param {string} req.body.transcript - The text to be translated.
@@ -67,7 +87,7 @@ router.post("/gpt/translate", async (req, res) => {
     messages: [
       {
         role: "system",
-        content: `You are an accurate language translator that will translate ${fromLanguage} text to ${toLanguage}. Do not include the pronounciation. You reply only with the direct translation, with brief to-the-point answers with no elaboration.`,
+        content: `You are an accurate language translator that will translate ${fromLanguage} text to ${toLanguage}. Do not include the pronounciation. You reply only with the direct translation, with brief to-the-point answers with no elaboration. If you are unable to translate OR if the translation is the same as the original text, reply with the original text.`,
       },
       { role: "user", content: `Translate the following: ${requestText}` },
     ],

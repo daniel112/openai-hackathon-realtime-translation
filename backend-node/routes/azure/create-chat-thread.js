@@ -43,7 +43,7 @@ const createThread = async (topicName) => {
   const chatClient = new ChatClient(getCommunicationEndpoint(), credential);
 
   const request = {
-    topic: topicName ?? "Your Chat sample",
+    topic: topicName ?? "Chat Thread Insight Demo",
   };
   const options = {
     participants: [

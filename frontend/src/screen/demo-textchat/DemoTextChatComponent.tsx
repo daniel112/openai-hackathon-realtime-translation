@@ -19,6 +19,10 @@ import { Text } from "@chakra-ui/react";
 import React from "react";
 import { translateTranscript } from "../../services/openai";
 
+export interface ChatMessageItem {
+  user?: string;
+  message?: string;
+}
 interface ChatScreenProps {
   token: string;
   userId: string;
@@ -27,6 +31,7 @@ interface ChatScreenProps {
   threadId: string;
   languageIso: string;
   endChatHandler(isParticipantRemoved: boolean): void;
+  onMessageReceived(chatMessage: ChatMessageItem): void;
   onLeaveChat(): void;
 }
 
@@ -40,6 +45,7 @@ export const TextChatComponent = (props: ChatScreenProps): JSX.Element => {
     endChatHandler,
     onLeaveChat,
     languageIso,
+    onMessageReceived,
   } = props;
   const adapterAfterCreate = useCallback(
     async (adapter: ChatAdapter): Promise<ChatAdapter> => {
@@ -55,12 +61,18 @@ export const TextChatComponent = (props: ChatScreenProps): JSX.Element => {
         }
       });
 
+      adapter.on("messageReceived", async (e) => {
+        onMessageReceived({
+          user: e.message.senderDisplayName,
+          message: e.message.content?.message,
+        });
+      });
       adapter.on("error", (e) => {
         console.error(e);
       });
       return adapter;
     },
-    [endChatHandler, userId]
+    [endChatHandler, onMessageReceived, userId]
   );
 
   const adapterArgs = useMemo(
