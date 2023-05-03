@@ -45,6 +45,7 @@ import { LanguageSelector } from "../../components/LanguageSelector";
 import { getChatHistory } from "./utils/getChatHistory";
 import { gptUse, summarizeTranscript } from "../../services/openai";
 import { TableData, mockData } from "./mockData";
+import { CustomerSentiment } from "./CustomerSentiment";
 
 const avatarsList = [CAT, MOUSE, KOALA, OCTOPUS, MONKEY, FOX];
 
@@ -67,7 +68,10 @@ export const TextChatHomeScreen = (): JSX.Element => {
 
   // realtime chat states
   const [chatMessages, setChatMessages] = React.useState<ChatMessageItem[]>([]);
+
   // post chat summary states
+  const [stringifieldChatHistory, setStringifieldChatHistory] =
+    React.useState<string>();
   const [summary, setSummary] = React.useState<string>();
 
   const navigate = useNavigate();
@@ -129,6 +133,9 @@ export const TextChatHomeScreen = (): JSX.Element => {
             <Box maxH={500} minH={200} overflowY="auto">
               <Heading size="xs" fontWeight={"medium"} lineHeight={6}>
                 <ChatSummary summary={summary} />
+                <CustomerSentiment
+                  stringifieldChatHistory={stringifieldChatHistory}
+                />
               </Heading>
             </Box>
           </CardBody>
@@ -163,7 +170,7 @@ export const TextChatHomeScreen = (): JSX.Element => {
                 endpointUrl,
                 threadId,
               });
-              console.log(stringifiedMessages);
+              setStringifieldChatHistory(stringifiedMessages);
               const result = await summarizeTranscript(stringifiedMessages);
               setSummary(result.text);
             }}
@@ -295,19 +302,23 @@ const UserTable = ({ messages }: { messages: ChatMessageItem[] }) => {
   useEffect(() => {
     const asyncGpt = async () => {
       // analyze & extract data
-      setLoading(true);
-      const result = await gptUse({
-        prompt: `extract any of the following insights from the conversation. \nid, name, email, phone. Always respond in a JSON stringified object. if the value is 'null' or 'undefined', leave it out of the object.\n\nConversation Transcript:\n\n${JSON.stringify(
-          messages
-        )}`,
-        systemMessage:
-          "You are a conversation insight analysis bot. Your job is to analyze the conversation data and extract insights.",
-      });
-      console.log("GPT result: ", result.text);
       try {
-        if (!result.text) return;
+        if (!messages || messages.length === 0) return;
+        setLoading(true);
+        const result = await gptUse({
+          prompt: `extract any of the following insights from the conversation. \nid, name, email, phone. Always respond in a JSON stringified object. if the value is 'null' or 'undefined', leave it out of the object.\n\nConversation Transcript:\n\n${JSON.stringify(
+            messages
+          )}`,
+          systemMessage:
+            "You are a conversation insight analysis bot. Your job is to analyze the conversation data and extract insights.",
+        });
+        console.log("GPT result: ", result.text);
+        setLoading(false);
 
+        if (!result.text) return;
         const parsedObj = JSON.parse(result.text);
+        // remove null keys
+        removeNullKeys(parsedObj);
         // filter for matching data in the mock DB
         // case insensitive
         const filtered = mockData.filter((obj) =>
@@ -318,7 +329,6 @@ const UserTable = ({ messages }: { messages: ChatMessageItem[] }) => {
           )
         );
         setgptParsedData(filtered);
-        setLoading(false);
       } catch (error) {
         console.error("Failed to parse GPT result");
         console.error(error);
@@ -362,3 +372,11 @@ const UserTable = ({ messages }: { messages: ChatMessageItem[] }) => {
     </TableContainer>
   );
 };
+
+function removeNullKeys(data: any): void {
+  for (const key in data) {
+    if (data[key] === null) {
+      delete data[key];
+    }
+  }
+}
