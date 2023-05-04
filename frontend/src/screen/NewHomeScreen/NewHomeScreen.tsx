@@ -13,7 +13,7 @@ export const NewHomeScreen = () => {
       <HStack h={"340"} align={"center"} justifyContent={"center"}>
         <VStack>
           <Text fontSize={"5xl"} justifyContent={"start"}>
-            Call Center AI Assitance Demo
+            Call Center AI Assistance Demo
           </Text>
           <Text pb={8}>
             Proof of Concept for a Call Center Intelligence platform powered by
