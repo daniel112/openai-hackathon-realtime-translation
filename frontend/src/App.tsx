@@ -17,10 +17,10 @@ const theme = extendTheme({ config });
  * route to component definition
  */
 const router = createBrowserRouter([
-  {
-    path: "/record",
-    element: <RecordScreen />,
-  },
+  // {
+  //   path: "/record",
+  //   element: <RecordScreen />,
+  // },
   {
     path: "/",
     element: <NewHomeScreen />,
