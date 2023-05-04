@@ -24,7 +24,7 @@ import {
   Tr,
   VStack,
 } from "@chakra-ui/react";
-import React, { useCallback, useEffect } from "react";
+import React, { useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { createChatThread } from "./services/createChatThread";
 import {
@@ -79,24 +79,6 @@ export const TextChatHomeScreen = (): JSX.Element => {
     label: "Spanish",
     iso: "es",
   });
-  useEffect(() => {
-    // if we already have a threadId from param, we don't need to create a new one
-    if (threadIdFromParam) {
-      console.log("--> already have threadId, skipping thread creation");
-      return;
-    }
-    console.log("--> creating chat thread----");
-    const createChatThread = async () => {
-      const threadId = await onCreateThread();
-      if (threadId) {
-        setThreadId(threadId);
-        console.log({ threadId });
-        navigate(`/demo-textchat/${threadId}`);
-      }
-    };
-    createChatThread();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const emojiBGColor = getEmojiBackgroundColor(selectedAvatar);
 
@@ -219,9 +201,20 @@ export const TextChatHomeScreen = (): JSX.Element => {
                 isDisabled={!displayName}
                 colorScheme="blue"
                 onClick={async (): Promise<void> => {
+                  // create a new room if no threadId is provided in param
+                  let activeThreadId = threadId;
+                  if (!activeThreadId) {
+                    console.log("--> creating chat thread----");
+                    activeThreadId = await onCreateThread();
+                    if (activeThreadId) {
+                      setThreadId(activeThreadId);
+                      navigate(`/demo-textchat/${activeThreadId}`);
+                    }
+                  }
+
+                  // join the room
                   const token = await getAZCommunicationToken();
                   const endpointUrl = await getAZCommunicationUrl();
-                  console.log({ token, endpointUrl });
                   setToken(token.token);
                   setChatIdentity(token.identity);
                   setEndpointUrl(endpointUrl);
@@ -231,7 +224,7 @@ export const TextChatHomeScreen = (): JSX.Element => {
 
                   // attempt to add this user to the chat thread
                   const result = await addUserToChatThread(
-                    threadId,
+                    activeThreadId,
                     token.identity,
                     displayName!
                   );
@@ -240,7 +233,7 @@ export const TextChatHomeScreen = (): JSX.Element => {
                   }
                 }}
               >
-                {threadIdFromParam ? "Join" : "Create"}
+                {threadIdFromParam ? "Join Room" : "Create Room"}
               </Button>
             </Box>
           </VStack>
@@ -250,13 +243,13 @@ export const TextChatHomeScreen = (): JSX.Element => {
   );
 };
 
-const onCreateThread = async (): Promise<string | null> => {
+const onCreateThread = async (): Promise<string> => {
   const threadId = await createChatThread();
   if (!threadId) {
     console.error(
       "Failed to create a thread, returned threadId is undefined or empty string"
     );
-    return null;
+    return "";
   } else {
     return threadId;
   }
@@ -264,9 +257,9 @@ const onCreateThread = async (): Promise<string | null> => {
 
 const ChatSummary = ({ summary }: any) => {
   return (
-    <Stack direction={"column"} paddingTop={10}>
-      {/* <Heading size={"md"}>Transcript Summary</Heading> */}
-      <Text>{summary}</Text>
+    <Stack direction={"column"}>
+      <Heading size={"sm"}>Transcript Summary</Heading>
+      <Box whiteSpace="pre-wrap">{summary}</Box>
     </Stack>
   );
 };
@@ -319,8 +312,11 @@ const UserTable = ({ messages }: { messages: ChatMessageItem[] }) => {
         const parsedObj = JSON.parse(result.text);
         // remove null keys
         removeNullKeys(parsedObj);
+        console.log("null removed: ", parsedObj);
+
         // filter for matching data in the mock DB
         // case insensitive
+        if (Object.keys(parsedObj).length === 0) return;
         const filtered = mockData.filter((obj) =>
           Object.keys(parsedObj).every(
             (key) =>
@@ -328,6 +324,7 @@ const UserTable = ({ messages }: { messages: ChatMessageItem[] }) => {
               parsedObj[key as keyof TableData]?.toLowerCase()
           )
         );
+        console.log({ filtered });
         setgptParsedData(filtered);
       } catch (error) {
         console.error("Failed to parse GPT result");
@@ -337,6 +334,8 @@ const UserTable = ({ messages }: { messages: ChatMessageItem[] }) => {
     };
     asyncGpt();
   }, [messages]);
+
+  if (!messages || messages.length === 0) return null;
   return (
     <TableContainer>
       <Table size="sm">
