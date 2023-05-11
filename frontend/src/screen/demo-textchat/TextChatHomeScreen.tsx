@@ -14,8 +14,13 @@ import {
   Radio,
   RadioGroup,
   Stack,
+  Tab,
+  TabList,
+  TabPanel,
+  TabPanels,
   Table,
   TableContainer,
+  Tabs,
   Tbody,
   Td,
   Text,
@@ -43,9 +48,9 @@ import { addUserToChatThread } from "./services/addUserToChatThread";
 import { ChatMessageItem, TextChatComponent } from "./DemoTextChatComponent";
 import { LanguageSelector } from "../../components/LanguageSelector";
 import { getChatHistory } from "./utils/getChatHistory";
-import { gptUse, summarizeTranscript } from "../../services/openai";
-import { TableData, mockData } from "./mockData";
-import { CustomerSentiment } from "./CustomerSentiment";
+import { summarizeTranscript } from "../../services/openai";
+import { AnalysisSection } from "./AnalysisSection";
+import { UserRegistration } from "./components/UserRegistration";
 
 const avatarsList = [CAT, MOUSE, KOALA, OCTOPUS, MONKEY, FOX];
 
@@ -70,7 +75,7 @@ export const TextChatHomeScreen = (): JSX.Element => {
   const [chatMessages, setChatMessages] = React.useState<ChatMessageItem[]>([]);
 
   // post chat summary states
-  const [stringifieldChatHistory, setStringifieldChatHistory] =
+  const [stringifiedChatHistory, setStringifiedChatHistory] =
     React.useState<string>();
   const [summary, setSummary] = React.useState<string>();
 
@@ -85,43 +90,54 @@ export const TextChatHomeScreen = (): JSX.Element => {
   return (
     <HStack>
       <VStack flex={1} h={"100%"}>
-        <Card variant={"filled"} width={"100%"} maxW={700} mt={50}>
-          <CardHeader>
-            <Heading size="md">
-              <Stack direction={"row"} justifyContent={"space-between"}>
-                <Text alignSelf={"center"}>Real-Time Analysis</Text>
-              </Stack>
-            </Heading>
-            <Divider pt={5} />
-          </CardHeader>
-          <CardBody>
-            <Box maxH={500} minH={200} overflowY="auto">
-              <Heading size="xs" fontWeight={"medium"} lineHeight={6}>
-                <UserTable messages={chatMessages} />
-              </Heading>
-            </Box>
-          </CardBody>
-        </Card>
-        <Card variant={"filled"} width={"100%"} maxW={700}>
-          <CardHeader>
-            <Heading size="md">
-              <Stack direction={"row"} justifyContent={"space-between"}>
-                <Text alignSelf={"center"}>Post Chat Analysis</Text>
-              </Stack>
-            </Heading>
-            <Divider pt={5} />
-          </CardHeader>
-          <CardBody>
-            <Box maxH={500} minH={200} overflowY="auto">
-              <Heading size="xs" fontWeight={"medium"} lineHeight={6}>
-                <ChatSummary summary={summary} />
-                <CustomerSentiment
-                  stringifieldChatHistory={stringifieldChatHistory}
+        <Tabs width={"100%"} align="center" isFitted variant="enclosed">
+          <TabList mb="1em">
+            <Tab>Analysis</Tab>
+            <Tab>Customer Chat</Tab>
+          </TabList>
+          <TabPanels>
+            <TabPanel>
+              <AnalysisSection
+                chatMessages={chatMessages}
+                summary={summary}
+                stringifiedChatHistory={stringifiedChatHistory}
+              />
+            </TabPanel>
+            <TabPanel>
+              {token &&
+              chatIdentity &&
+              endpointUrl &&
+              threadId &&
+              displayName ? (
+                <TextChatComponent
+                  token={token}
+                  userId={chatIdentity}
+                  displayName={displayName}
+                  endpointUrl={endpointUrl}
+                  threadId={threadId}
+                  languageIso={languageRef.current.iso}
+                  onMessageReceived={(message: ChatMessageItem) => {
+                    // 1. append to chat history
+                    setChatMessages((prev) => [...prev, message]);
+                  }}
+                  onLeaveChat={() => {
+                    setToken(undefined);
+                    setChatIdentity(undefined);
+                    setEndpointUrl(undefined);
+                    setThreadId("");
+                    setDisplayName(undefined);
+                    navigate("/demo-textchat");
+                  }}
+                  endChatHandler={async () => {
+                    console.log("End chat through the other chat");
+                  }}
                 />
-              </Heading>
-            </Box>
-          </CardBody>
-        </Card>
+              ) : (
+                <UserRegistration threadId={threadId} />
+              )}
+            </TabPanel>
+          </TabPanels>
+        </Tabs>
       </VStack>
       {token && chatIdentity && endpointUrl && threadId && displayName ? (
         <VStack flex={1} h={"100%"}>
@@ -152,7 +168,7 @@ export const TextChatHomeScreen = (): JSX.Element => {
                 endpointUrl,
                 threadId,
               });
-              setStringifieldChatHistory(stringifiedMessages);
+              setStringifiedChatHistory(stringifiedMessages);
               const result = await summarizeTranscript(stringifiedMessages);
               setSummary(result.text);
             }}
@@ -255,15 +271,6 @@ const onCreateThread = async (): Promise<string> => {
   }
 };
 
-const ChatSummary = ({ summary }: any) => {
-  return (
-    <Stack direction={"column"}>
-      <Heading size={"sm"}>Transcript Summary</Heading>
-      <Box whiteSpace="pre-wrap">{summary}</Box>
-    </Stack>
-  );
-};
-
 const AvatarSection = ({ onChange }: any): JSX.Element => {
   return (
     <Container>
@@ -288,94 +295,3 @@ const AvatarSection = ({ onChange }: any): JSX.Element => {
     </Container>
   );
 };
-
-const UserTable = ({ messages }: { messages: ChatMessageItem[] }) => {
-  const [gptParsedData, setgptParsedData] = React.useState<TableData[]>();
-  const [loading, setLoading] = React.useState<boolean>(false);
-  useEffect(() => {
-    const asyncGpt = async () => {
-      // analyze & extract data
-      try {
-        if (!messages || messages.length === 0) return;
-        setLoading(true);
-        const result = await gptUse({
-          prompt: `extract any of the following insights from the conversation. \nid, name, email, phone. Always respond in a JSON stringified object. if the value is 'null' or 'undefined', leave it out of the object.\n\nConversation Transcript:\n\n${JSON.stringify(
-            messages
-          )}`,
-          systemMessage:
-            "You are a conversation insight analysis bot. Your job is to analyze the conversation data and extract insights.",
-        });
-        console.log("GPT result: ", result.text);
-        setLoading(false);
-
-        if (!result.text) return;
-        const parsedObj = JSON.parse(result.text);
-        // remove null keys
-        removeNullKeys(parsedObj);
-        console.log("null removed: ", parsedObj);
-
-        // filter for matching data in the mock DB
-        // case insensitive
-        if (Object.keys(parsedObj).length === 0) return;
-        const filtered = mockData.filter((obj) =>
-          Object.keys(parsedObj).every(
-            (key) =>
-              obj[key as keyof TableData]?.toLowerCase() ===
-              parsedObj[key as keyof TableData]?.toLowerCase()
-          )
-        );
-        console.log({ filtered });
-        setgptParsedData(filtered);
-      } catch (error) {
-        console.error("Failed to parse GPT result");
-        console.error(error);
-        setLoading(false);
-      }
-    };
-    asyncGpt();
-  }, [messages]);
-
-  if (!messages || messages.length === 0) return null;
-  return (
-    <TableContainer>
-      <Table size="sm">
-        <Thead>
-          <Tr>
-            <Th>Account ID</Th>
-            <Th>Name</Th>
-            <Th>Email</Th>
-            <Th>Phone</Th>
-            <Th>Membership Type</Th>
-            <Th>Pending Balance</Th>
-          </Tr>
-        </Thead>
-        <Tbody>
-          {loading ? (
-            <CircularProgress />
-          ) : (
-            gptParsedData?.map((data, index) => {
-              return (
-                <Tr key={index}>
-                  <Td>{data.id}</Td>
-                  <Td>{data.name}</Td>
-                  <Td>{data.email}</Td>
-                  <Td>{data.phone}</Td>
-                  <Td>{data.membershipType}</Td>
-                  <Td>{data.pendingBalance}</Td>
-                </Tr>
-              );
-            })
-          )}
-        </Tbody>
-      </Table>
-    </TableContainer>
-  );
-};
-
-function removeNullKeys(data: any): void {
-  for (const key in data) {
-    if (data[key] === null) {
-      delete data[key];
-    }
-  }
-}

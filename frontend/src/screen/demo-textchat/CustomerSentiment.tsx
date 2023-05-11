@@ -7,7 +7,7 @@ const prompt =
 
 // Always respond back in JSON format {"sentiment": "<sentiment>", "name": "<name>", "reason": "<reason>"}
 interface CustomerSentimentProps {
-  stringifieldChatHistory?: string;
+  stringifiedChatHistory?: string;
 }
 
 export const CustomerSentiment = (props: CustomerSentimentProps) => {
@@ -17,9 +17,9 @@ export const CustomerSentiment = (props: CustomerSentimentProps) => {
     const asyncStuff = async () => {
       setLoading(true);
       try {
-        console.log("stringifiedChatHistory", props.stringifieldChatHistory);
+        console.log("stringifiedChatHistory", props.stringifiedChatHistory);
         const result = await gptUse({
-          prompt: `${prompt}\n\n${props.stringifieldChatHistory}`,
+          prompt: `${prompt}\n\n${props.stringifiedChatHistory}`,
           systemMessage:
             "You are a conversation insight analysis bot. Your job is to analyze the conversation data and extract insights.",
         });
@@ -32,8 +32,8 @@ export const CustomerSentiment = (props: CustomerSentimentProps) => {
       }
     };
 
-    props.stringifieldChatHistory && asyncStuff();
-  }, [props.stringifieldChatHistory]);
+    props.stringifiedChatHistory && asyncStuff();
+  }, [props.stringifiedChatHistory]);
 
   if (loading) {
     return <Text>Loading...</Text>;
