@@ -87,7 +87,7 @@ router.post("/gpt/translate", async (req, res) => {
     messages: [
       {
         role: "system",
-        content: `You are an accurate language translator that will translate ${fromLanguage} text to ${toLanguage}. Do not include the pronounciation. You reply only with the direct translation, with brief to-the-point answers with no elaboration. If you are unable to translate OR if the translation is the same as the original text, reply with the original text.`,
+        content: `You are an accurate language translator that will translate ${fromLanguage} text to ${toLanguage}. Do not include the pronunciation—your reply only with a direct translation, with brief to-the-point answers with no elaboration. If you cannot translate OR if the translation is the same as the original text, reply with the original text.`,
       },
       { role: "user", content: `Translate the following: ${requestText}` },
     ],

@@ -20,22 +20,22 @@ import {
 import {
   ResultReason,
   SpeechRecognizer,
-  TranslationRecognizer,
 } from "microsoft-cognitiveservices-speech-sdk";
 import * as speechSDK from "microsoft-cognitiveservices-speech-sdk";
 import Lottie from "react-lottie";
 import recordingTransition from "../../lottie/recording-transition.json";
-import { getAzSpeechToken } from "../../services/getAzSpeechToken";
 import {
   summarizeTranscript,
   translateTranscript,
 } from "../../services/openai";
+import { TTSSection } from "./components/TTSSection";
+import { getAZSpeechConfig } from "./services/getAZSpeechConfig";
 
 export const DemoAzureScreen = () => {
   const [translationMap, setTranslationMap] = useState<TranslationMap>({});
   const [isRecording, setIsRecording] = useState(false);
   const [summary, setSummary] = useState<string>();
-  const [voiceFile, setVoiceFile] = useState<string>();
+  const [TTS, setTTS] = useState<string>();
   const [recognizer, setRecognizer] = useState<SpeechRecognizer>();
   const [liveFeed, setLiveFeed] = useState<string>("");
   const textGroupIndex = React.useRef(0);
@@ -43,21 +43,19 @@ export const DemoAzureScreen = () => {
     label: "English",
     iso: "en",
   });
+
+  // TODO: DYO make dropdown useful
   const languageToRef = React.useRef<{ label: string; iso: string }>({
-    label: "Spanish",
-    iso: "es",
+    label: "Japanese",
+    iso: "ja-JP",
   });
   const combinedText = combineValuesInOrder(translationMap);
 
   useEffect(() => {
     const asyncThing = async () => {
-      const tokenObj = await getAzSpeechToken();
+      const speechConfig = await getAZSpeechConfig();
       const audioConfig = speechSDK.AudioConfig.fromDefaultMicrophoneInput();
 
-      const speechConfig = speechSDK.SpeechConfig.fromAuthorizationToken(
-        tokenObj.authToken!,
-        tokenObj.region!
-      );
       speechConfig.outputFormat = speechSDK.OutputFormat.Detailed;
       speechConfig.setProperty(
         speechSDK.PropertyId.SpeechServiceResponse_PostProcessingOption,
@@ -78,33 +76,41 @@ export const DemoAzureScreen = () => {
       asyncThing();
       return;
     }
+
     recognizer.recognizing = async (s, e) => {
       console.log("recognizing", e.result.text);
-      console.log(e.result.reason);
+      // console.log(e.result.reason);
       // const translatedText = e.result.translations?.get?.(
       //   languageToRef.current.iso
       // );
       // console.log("translated", translatedText);
 
-      if (e.result.reason === ResultReason.RecognizingSpeech) {
+      // if (e.result.reason === ResultReason.RecognizingSpeech) {
+      // const translateRes = await translateTranscript({
+      //   text: e.result.text,
+      //   fromLanguage: languageFromRef.current.iso,
+      //   toLanguage: languageToRef.current.iso,
+      // });
+
+      //   setLiveFeed(translateRes.text ?? "foo");
+      // }
+    };
+
+    recognizer.recognized = async (s, e) => {
+      console.log({ recognized: e, reason: e.result.reason });
+
+      if (e.result.reason === ResultReason.RecognizedSpeech) {
+        console.log("recognized", e.result.text);
         const translateRes = await translateTranscript({
           text: e.result.text,
           fromLanguage: languageFromRef.current.iso,
           toLanguage: languageToRef.current.iso,
         });
-
-        setLiveFeed(translateRes.text ?? "foo");
-      }
-    };
-
-    recognizer.recognized = (s, e) => {
-      console.log({ recognized: e, reason: e.result.reason });
-      if (e.result.reason === ResultReason.RecognizedSpeech) {
-        console.log("recognized", e.result.text);
+        setTTS(translateRes.text!);
         setTranslationMap((prev) => ({
           ...prev,
           [textGroupIndex.current]: {
-            text: e.result.text,
+            text: translateRes.text!, //e.result.text,
             transcriptionTime: 0,
             translationTime: 0,
           },
@@ -150,6 +156,7 @@ export const DemoAzureScreen = () => {
             }}
           />
           <CallSummary summary={summary} />
+          <TTSSection text={TTS} />
         </Stack>
 
         <TranslatedSection
@@ -162,10 +169,6 @@ export const DemoAzureScreen = () => {
             const result = await summarizeTranscript(combinedText);
             result.text && setSummary(result.text);
           }}
-          onVoice={() => {
-            console.log("ON VOICE");
-          }}
-          voiceFile={voiceFile}
         />
       </Stack>
     </Box>
@@ -259,18 +262,8 @@ const TranslatedSection = ({
   onClearPress,
   isRecording,
   onSummarize,
-  onVoice,
-  voiceFile,
 }: any) => {
   const audioref = React.useRef<HTMLAudioElement>(null);
-  const [isVoiceLoading, setVoiceLoading] = useState(false);
-  useEffect(() => {
-    if (!audioref.current || !voiceFile) return;
-    setVoiceLoading(false);
-    const audiodata = require(`../../audio/${voiceFile}`);
-    audioref.current.src = audiodata;
-    audioref.current.play();
-  }, [voiceFile]);
 
   return (
     <Card variant={"filled"} width={"100%"} maxW={700}>
