@@ -2,12 +2,14 @@ import { Container, Text, FormLabel, Stack } from "@chakra-ui/react";
 import Flag from "react-flagkit";
 import Select, { OnChangeValue } from "react-select";
 
-interface LanguageOption {
+export interface LanguageOption {
   /**
    * language in ISO 639-1 format
    * https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes
    */
   value: string;
+  // alias for "value"
+  iso: string;
   /**
    * NOTE: This gets overriden with a React Component at runtime
    * property name 'label' is required on react-select
@@ -20,8 +22,9 @@ interface LanguageOption {
   countryCode: string;
 }
 
-const languages: LanguageOption[] = [
+export const languages: LanguageOption[] = [
   { value: "en", label: "English", countryCode: "US" },
+  { value: "hi", label: "Hindi", countryCode: "IN" },
   { value: "es", label: "Spanish", countryCode: "ES" },
   { value: "fr", label: "French", countryCode: "FR" },
   { value: "de", label: "German", countryCode: "DE" },
@@ -56,7 +59,15 @@ const languages: LanguageOption[] = [
   { value: "lt", label: "Lithuanian", countryCode: "LT" },
   { value: "lv", label: "Latvian", countryCode: "LV" },
   { value: "et", label: "Estonian", countryCode: "EE" },
-];
+].map(option => ({ ...option, iso: option.value }));
+
+export const languageMap = languages.reduce(
+  (map: Record<string, LanguageOption>, lang: LanguageOption) => ({
+    ...map,
+    [lang.label]: lang
+  }),
+  {} as Record<string, LanguageOption>
+);
 
 /**
  * Update the languages array so that we can have a custom option component
@@ -75,7 +86,8 @@ const updatedLanguagesLabel = languages.map((language) => {
 interface LanguageSelectorProps {
   onChange: (newValue: OnChangeValue<LanguageOption, false>) => void;
   title: string;
-  defaultIndex: number;
+  defaultIndex?: number;
+  defaultLanguage?: LanguageOption;
   disabled?: boolean;
 }
 
@@ -86,6 +98,7 @@ export const LanguageSelector = ({
   onChange,
   title,
   defaultIndex,
+  defaultLanguage,
   disabled = false,
 }: LanguageSelectorProps) => {
   return (
@@ -94,7 +107,7 @@ export const LanguageSelector = ({
       <Select
         isDisabled={disabled}
         // @ts-ignore
-        defaultValue={languages[defaultIndex]}
+        defaultValue={defaultLanguage ?? languages[defaultIndex]}
         onChange={onChange}
         // @ts-ignore
         options={updatedLanguagesLabel}
