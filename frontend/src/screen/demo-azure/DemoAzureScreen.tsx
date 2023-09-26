@@ -12,7 +12,7 @@ import {
   Text,
 } from "@chakra-ui/react";
 import React, { useEffect, useState } from "react";
-import { LanguageSelector } from "../../components/LanguageSelector";
+import { LanguageSelector, languageMap, LanguageOption } from "../../components/LanguageSelector";
 import {
   combineValuesInOrder,
   TranslationMap,
@@ -28,27 +28,21 @@ import {
   summarizeTranscript,
   translateTranscript,
 } from "../../services/openai";
-import { TTSSection } from "./components/TTSSection";
 import { getAZSpeechConfig } from "./services/getAZSpeechConfig";
+
+const defaultSourceLang = languageMap.English;
+const defaultDestinationLang = languageMap.Hindi;
 
 export const DemoAzureScreen = () => {
   const [translationMap, setTranslationMap] = useState<TranslationMap>({});
   const [isRecording, setIsRecording] = useState(false);
   const [summary, setSummary] = useState<string>();
-  const [TTS, setTTS] = useState<string>();
   const [recognizer, setRecognizer] = useState<SpeechRecognizer>();
-  const [liveFeed, setLiveFeed] = useState<string>("");
   const textGroupIndex = React.useRef(0);
-  const languageFromRef = React.useRef<{ label: string; iso: string }>({
-    label: "English",
-    iso: "en",
-  });
 
-  // TODO: DYO make dropdown useful
-  const languageToRef = React.useRef<{ label: string; iso: string }>({
-    label: "Japanese",
-    iso: "ja-JP",
-  });
+  const languageFromRef = React.useRef<LanguageOption>(defaultSourceLang);
+  const languageToRef = React.useRef<LanguageOption>(defaultDestinationLang);
+
   const combinedText = combineValuesInOrder(translationMap);
 
   useEffect(() => {
@@ -100,13 +94,11 @@ export const DemoAzureScreen = () => {
       console.log({ recognized: e, reason: e.result.reason });
 
       if (e.result.reason === ResultReason.RecognizedSpeech) {
-        console.log("recognized", e.result.text);
         const translateRes = await translateTranscript({
           text: e.result.text,
           fromLanguage: languageFromRef.current.iso,
           toLanguage: languageToRef.current.iso,
         });
-        setTTS(translateRes.text!);
         setTranslationMap((prev) => ({
           ...prev,
           [textGroupIndex.current]: {
@@ -115,7 +107,6 @@ export const DemoAzureScreen = () => {
             translationTime: 0,
           },
         }));
-        setLiveFeed("");
         textGroupIndex.current++;
       }
     };
@@ -156,11 +147,9 @@ export const DemoAzureScreen = () => {
             }}
           />
           <CallSummary summary={summary} />
-          <TTSSection text={TTS} />
         </Stack>
 
         <TranslatedSection
-          liveFeed={liveFeed}
           text={combinedText}
           onClearPress={() => setTranslationMap({})}
           isRecording={isRecording}
@@ -217,7 +206,7 @@ const InputSection = ({
       <Stack direction={"row"} w={600}>
         <LanguageSelector
           disabled={isRecording}
-          defaultIndex={0}
+          defaultLanguage={defaultSourceLang}
           title="What language are you speaking?"
           onChange={(newValue) => {
             if (newValue) {
@@ -231,7 +220,7 @@ const InputSection = ({
         />
         <LanguageSelector
           title="What language are you translating to?"
-          defaultIndex={1}
+          defaultLanguage={defaultDestinationLang}
           onChange={(newValue) => {
             if (newValue) {
               console.log(`Translating to: ${newValue.labelString}`);
@@ -257,14 +246,11 @@ const CallSummary = ({ summary }: any) => {
 };
 
 const TranslatedSection = ({
-  liveFeed,
   text,
   onClearPress,
   isRecording,
   onSummarize,
 }: any) => {
-  const audioref = React.useRef<HTMLAudioElement>(null);
-
   return (
     <Card variant={"filled"} width={"100%"} maxW={700}>
       <CardHeader>
@@ -285,7 +271,7 @@ const TranslatedSection = ({
       <CardBody>
         <Box maxH={500} h={500} overflowY="auto">
           <Heading size="xs" fontWeight={"medium"} lineHeight={6}>
-            {`${text} ${liveFeed}`}
+            {`${text}`}
           </Heading>
         </Box>
       </CardBody>
@@ -296,7 +282,6 @@ const TranslatedSection = ({
           </Button>
         </>
       )}
-      <audio ref={audioref} />
     </Card>
   );
 };
