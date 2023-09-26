@@ -30,13 +30,10 @@ import {
 } from "../../services/openai";
 import { getAZSpeechConfig } from "./services/getAZSpeechConfig";
 
-export const DemoAzureScreen = ({ 
-  defaultSourceLang = languageMap.English,
-  defaultDestinationLang = languageMap.Hindi
-}: { 
-  defaultSourceLang?: LanguageOption,
-  defaultDestinationLang?: LanguageOption
-}) => {
+const defaultSourceLang = languageMap.English;
+const defaultDestinationLang = languageMap.Hindi;
+
+export const DemoAzureScreen = () => {
   const [translationMap, setTranslationMap] = useState<TranslationMap>({});
   const [isRecording, setIsRecording] = useState(false);
   const [summary, setSummary] = useState<string>();
