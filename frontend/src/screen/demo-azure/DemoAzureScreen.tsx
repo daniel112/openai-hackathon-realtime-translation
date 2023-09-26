@@ -38,6 +38,7 @@ export const DemoAzureScreen = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [summary, setSummary] = useState<string>();
   const [recognizer, setRecognizer] = useState<SpeechRecognizer>();
+  const [liveFeed, setLiveFeed] = useState<string>("");
   const textGroupIndex = React.useRef(0);
 
   const languageFromRef = React.useRef<LanguageOption>(defaultSourceLang);
@@ -73,21 +74,17 @@ export const DemoAzureScreen = () => {
 
     recognizer.recognizing = async (s, e) => {
       console.log("recognizing", e.result.text);
-      // console.log(e.result.reason);
-      // const translatedText = e.result.translations?.get?.(
-      //   languageToRef.current.iso
-      // );
-      // console.log("translated", translatedText);
+      console.log(e.result.reason);
 
-      // if (e.result.reason === ResultReason.RecognizingSpeech) {
-      // const translateRes = await translateTranscript({
-      //   text: e.result.text,
-      //   fromLanguage: languageFromRef.current.iso,
-      //   toLanguage: languageToRef.current.iso,
-      // });
+      if (e.result.reason === ResultReason.RecognizingSpeech) {
+        const translateRes = await translateTranscript({
+          text: e.result.text,
+          fromLanguage: languageFromRef.current.iso,
+          toLanguage: languageToRef.current.iso,
+        });
 
-      //   setLiveFeed(translateRes.text ?? "foo");
-      // }
+        setLiveFeed(translateRes.text ?? "foo");
+      }
     };
 
     recognizer.recognized = async (s, e) => {
@@ -107,6 +104,7 @@ export const DemoAzureScreen = () => {
             translationTime: 0,
           },
         }));
+        setLiveFeed("");
         textGroupIndex.current++;
       }
     };
@@ -150,6 +148,7 @@ export const DemoAzureScreen = () => {
         </Stack>
 
         <TranslatedSection
+          liveFeed={liveFeed}
           text={combinedText}
           onClearPress={() => setTranslationMap({})}
           isRecording={isRecording}
@@ -246,6 +245,7 @@ const CallSummary = ({ summary }: any) => {
 };
 
 const TranslatedSection = ({
+  liveFeed,
   text,
   onClearPress,
   isRecording,
@@ -271,7 +271,7 @@ const TranslatedSection = ({
       <CardBody>
         <Box maxH={500} h={500} overflowY="auto">
           <Heading size="xs" fontWeight={"medium"} lineHeight={6}>
-            {`${text}`}
+            {`${text} ${liveFeed}`}
           </Heading>
         </Box>
       </CardBody>
