@@ -20,51 +20,55 @@ export interface LanguageOption {
    */
   labelString?: string;
   countryCode: string;
+  /**
+   * https://learn.microsoft.com/en-us/azure/ai-services/speech-service/language-support?tabs=stt
+   */
+  localeBcp47: string;
 }
 
 export const languages: LanguageOption[] = [
-  { value: "en", label: "English", countryCode: "US" },
-  { value: "hi", label: "Hindi", countryCode: "IN" },
-  { value: "es", label: "Spanish", countryCode: "ES" },
-  { value: "fr", label: "French", countryCode: "FR" },
-  { value: "de", label: "German", countryCode: "DE" },
-  { value: "it", label: "Italian", countryCode: "IT" },
-  { value: "pt", label: "Portuguese", countryCode: "PT" },
-  { value: "nl", label: "Dutch", countryCode: "NL" },
-  { value: "ru", label: "Russian", countryCode: "RU" },
-  {
-    value: "zh",
-    label: "Chinese (Simplified)",
-    countryCode: "CN",
-  },
-  { value: "ja", label: "Japanese", countryCode: "JP" },
-  { value: "ko", label: "Korean", countryCode: "KR" },
-  { value: "ar", label: "Arabic", countryCode: "SA" },
-  { value: "id", label: "Indonesian", countryCode: "ID" },
-  { value: "tr", label: "Turkish", countryCode: "TR" },
-  { value: "sv", label: "Swedish", countryCode: "SE" },
-  { value: "no", label: "Norwegian", countryCode: "NO" },
-  { value: "da", label: "Danish", countryCode: "DK" },
-  { value: "pl", label: "Polish", countryCode: "PL" },
-  { value: "fi", label: "Finnish", countryCode: "FI" },
-  { value: "el", label: "Greek", countryCode: "GR" },
-  { value: "cs", label: "Czech", countryCode: "CZ" },
-  { value: "hu", label: "Hungarian", countryCode: "HU" },
-  { value: "ro", label: "Romanian", countryCode: "RO" },
-  { value: "sk", label: "Slovak", countryCode: "SK" },
-  { value: "bg", label: "Bulgarian", countryCode: "BG" },
-  { value: "hr", label: "Croatian", countryCode: "HR" },
-  { value: "sr", label: "Serbian", countryCode: "RS" },
-  { value: "sl", label: "Slovenian", countryCode: "SI" },
-  { value: "lt", label: "Lithuanian", countryCode: "LT" },
-  { value: "lv", label: "Latvian", countryCode: "LV" },
-  { value: "et", label: "Estonian", countryCode: "EE" },
-].map(option => ({ ...option, iso: option.value }));
+  { value: "en", label: "English", countryCode: "US", localeBcp47: "en-US" },
+  { value: "hi", label: "Hindi", countryCode: "IN", localeBcp47: "hi-IN" },
+  { value: "es", label: "Spanish", countryCode: "ES", localeBcp47: "es-ES" },
+  // { value: "fr", label: "French", countryCode: "FR" },
+  // { value: "de", label: "German", countryCode: "DE" },
+  // { value: "it", label: "Italian", countryCode: "IT" },
+  // { value: "pt", label: "Portuguese", countryCode: "PT" },
+  // { value: "nl", label: "Dutch", countryCode: "NL" },
+  // { value: "ru", label: "Russian", countryCode: "RU" },
+  // {
+  //   value: "zh",
+  //   label: "Chinese (Simplified)",
+  //   countryCode: "CN",
+  // },
+  // { value: "ja", label: "Japanese", countryCode: "JP" },
+  // { value: "ko", label: "Korean", countryCode: "KR" },
+  // { value: "ar", label: "Arabic", countryCode: "SA" },
+  // { value: "id", label: "Indonesian", countryCode: "ID" },
+  // { value: "tr", label: "Turkish", countryCode: "TR" },
+  // { value: "sv", label: "Swedish", countryCode: "SE" },
+  // { value: "no", label: "Norwegian", countryCode: "NO" },
+  // { value: "da", label: "Danish", countryCode: "DK" },
+  // { value: "pl", label: "Polish", countryCode: "PL" },
+  // { value: "fi", label: "Finnish", countryCode: "FI" },
+  // { value: "el", label: "Greek", countryCode: "GR" },
+  // { value: "cs", label: "Czech", countryCode: "CZ" },
+  // { value: "hu", label: "Hungarian", countryCode: "HU" },
+  // { value: "ro", label: "Romanian", countryCode: "RO" },
+  // { value: "sk", label: "Slovak", countryCode: "SK" },
+  // { value: "bg", label: "Bulgarian", countryCode: "BG" },
+  // { value: "hr", label: "Croatian", countryCode: "HR" },
+  // { value: "sr", label: "Serbian", countryCode: "RS" },
+  // { value: "sl", label: "Slovenian", countryCode: "SI" },
+  // { value: "lt", label: "Lithuanian", countryCode: "LT" },
+  // { value: "lv", label: "Latvian", countryCode: "LV" },
+  // { value: "et", label: "Estonian", countryCode: "EE" },
+].map((option) => ({ ...option, iso: option.value }));
 
 export const languageMap = languages.reduce(
   (map: Record<string, LanguageOption>, lang: LanguageOption) => ({
     ...map,
-    [lang.label]: lang
+    [lang.label]: lang,
   }),
   {} as Record<string, LanguageOption>
 );

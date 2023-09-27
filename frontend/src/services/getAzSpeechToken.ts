@@ -22,14 +22,14 @@ export async function getAzSpeechToken(): Promise<AzSpeechToken> {
         path: "/",
       });
 
-      console.log("Token fetched from back-end: " + token);
+      console.log("Token fetched from back-end");
       return { authToken: token, region: region };
     } catch (err) {
       console.log(err);
       return { authToken: null, error: err };
     }
   } else {
-    console.log("Token fetched from cookie: " + speechToken);
+    console.log("Token fetched from cookie");
     const idx = speechToken.indexOf(":");
     return {
       authToken: speechToken.slice(idx + 1),

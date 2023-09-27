@@ -12,7 +12,11 @@ import {
   Text,
 } from "@chakra-ui/react";
 import React, { useEffect, useState } from "react";
-import { LanguageSelector, languageMap, LanguageOption } from "../../components/LanguageSelector";
+import {
+  LanguageSelector,
+  languageMap,
+  LanguageOption,
+} from "../../components/LanguageSelector";
 import {
   combineValuesInOrder,
   TranslationMap,
@@ -56,10 +60,13 @@ export const DemoAzureScreen = () => {
         speechSDK.PropertyId.SpeechServiceResponse_PostProcessingOption,
         "default"
       );
-      console.log(speechConfig);
       // speechConfig.addTargetLanguage(languageToRef.current.iso);
       // input language
-      speechConfig.speechRecognitionLanguage = "en-US";
+      console.log(
+        `setting recognizer locale to ${languageFromRef.current.localeBcp47}`
+      );
+      speechConfig.speechRecognitionLanguage =
+        languageFromRef.current.localeBcp47;
       var speechRecognizer = new speechSDK.SpeechRecognizer(
         speechConfig,
         audioConfig
@@ -79,11 +86,11 @@ export const DemoAzureScreen = () => {
       if (e.result.reason === ResultReason.RecognizingSpeech) {
         const translateRes = await translateTranscript({
           text: e.result.text,
-          fromLanguage: languageFromRef.current.iso,
-          toLanguage: languageToRef.current.iso,
+          fromLanguage: languageFromRef.current.localeBcp47,
+          toLanguage: languageToRef.current.localeBcp47,
         });
 
-        setLiveFeed(translateRes.text ?? "foo");
+        setLiveFeed(translateRes.text ?? "");
       }
     };
 
@@ -93,8 +100,8 @@ export const DemoAzureScreen = () => {
       if (e.result.reason === ResultReason.RecognizedSpeech) {
         const translateRes = await translateTranscript({
           text: e.result.text,
-          fromLanguage: languageFromRef.current.iso,
-          toLanguage: languageToRef.current.iso,
+          fromLanguage: languageFromRef.current.localeBcp47,
+          toLanguage: languageToRef.current.localeBcp47,
         });
         setTranslationMap((prev) => ({
           ...prev,
@@ -128,7 +135,7 @@ export const DemoAzureScreen = () => {
             languageFromRef={languageFromRef}
             languageToRef={languageToRef}
             isRecording={isRecording}
-            setIsRecording={setIsRecording}
+            setRecognizer={setRecognizer}
           />
           <RecordButton
             isRecording={isRecording}
@@ -198,7 +205,7 @@ const InputSection = ({
   languageFromRef,
   languageToRef,
   isRecording,
-  setIsRecording,
+  setRecognizer,
 }: any) => {
   return (
     <Stack paddingTop={10} direction={"column"}>
@@ -210,9 +217,11 @@ const InputSection = ({
           onChange={(newValue) => {
             if (newValue) {
               console.log(`Speaking: ${newValue.labelString}`);
+              setRecognizer(null);
               languageFromRef.current = {
                 iso: newValue.value,
                 label: newValue.labelString!,
+                localeBcp47: newValue.localeBcp47,
               };
             }
           }}
@@ -226,6 +235,7 @@ const InputSection = ({
               languageToRef.current = {
                 iso: newValue.value,
                 label: newValue.labelString!,
+                localeBcp47: newValue.localeBcp47,
               };
             }
           }}
