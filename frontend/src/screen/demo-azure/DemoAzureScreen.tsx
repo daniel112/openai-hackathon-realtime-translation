@@ -38,6 +38,7 @@ const defaultSourceLang = languageMap.English;
 const defaultDestinationLang = languageMap.Hindi;
 
 export const DemoAzureScreen = () => {
+  const [isSummarizing, setIsSummarizing] = useState(false);
   const [translationMap, setTranslationMap] = useState<TranslationMap>({});
   const [isRecording, setIsRecording] = useState(false);
   const [summary, setSummary] = useState<string>();
@@ -159,9 +160,11 @@ export const DemoAzureScreen = () => {
           text={combinedText}
           onClearPress={() => setTranslationMap({})}
           isRecording={isRecording}
+          isSummarizing={isSummarizing}
           onSummarize={async () => {
-            console.log("ON SUMMARIZE");
+            setIsSummarizing(true);
             const result = await summarizeTranscript(combinedText);
+            setIsSummarizing(false);
             result.text && setSummary(result.text);
           }}
         />
@@ -260,6 +263,7 @@ const TranslatedSection = ({
   onClearPress,
   isRecording,
   onSummarize,
+  isSummarizing,
 }: any) => {
   return (
     <Card variant={"filled"} width={"100%"} maxW={700}>
@@ -287,7 +291,11 @@ const TranslatedSection = ({
       </CardBody>
       {!isRecording && text && (
         <>
-          <Button colorScheme={"green"} onClick={onSummarize}>
+          <Button
+            colorScheme={"green"}
+            isLoading={isSummarizing}
+            onClick={onSummarize}
+          >
             Summarize
           </Button>
         </>
