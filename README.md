@@ -6,6 +6,7 @@ Real time voice translation utilizing OpenAI's Whisper for transcript and ChatCo
 
 ![](./img/2023-03-29-20-35-51.png)
 
+- [Demo Video](https://youtu.be/jA9NLCYiztE?si=odzBVCSF_ZutRuwz)
 ## Features
 
 - From a dropdown, select your spoken language and the language you want to translate to
